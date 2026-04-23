@@ -219,6 +219,14 @@ class BaseAgent:
             {"role": "user", "content": user_msg}
         ]
 
+    @staticmethod
+    def _strip_think_tags(text: str) -> str:
+        """移除模型返回的思考过程标签（如 <think>...</think>）"""
+        if not text:
+            return text
+        cleaned = re.sub(r'<think>.*?</think>\s*', '', text, flags=re.DOTALL)
+        return cleaned.strip()
+
     def _call_llm(self, messages: List[Dict], temperature: float = 0.4) -> str:
         """调用大模型"""
         response = self.client.chat.completions.create(
@@ -228,7 +236,8 @@ class BaseAgent:
             max_tokens=500,
             top_p=0.8
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content
+        return self._strip_think_tags(content)
 
 
 class PriceAgent(BaseAgent):
@@ -247,7 +256,8 @@ class PriceAgent(BaseAgent):
             max_tokens=500,
             top_p=0.8
         )
-        return self.safety_filter(response.choices[0].message.content)
+        content = self._strip_think_tags(response.choices[0].message.content)
+        return self.safety_filter(content)
 
     def _calc_temperature(self, bargain_count: int) -> float:
         """动态温度策略"""
@@ -273,6 +283,7 @@ class TechAgent(BaseAgent):
         )
 
         return self.safety_filter(response.choices[0].message.content)
+
 
 
     # def _fetch_tech_specs(self) -> str:

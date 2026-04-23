@@ -2,6 +2,9 @@ FROM python:3.10-alpine AS builder
 
 WORKDIR /app
 
+# 替换为阿里云镜像源，大幅提升国内下载速度
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
 # 只安装构建所需的依赖
 RUN apk add --no-cache --virtual .build-deps \
     gcc \
@@ -15,7 +18,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # 复制依赖文件并安装
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip install --no-cache-dir -r requirements.txt
 
 # 第二阶段：最终镜像
 FROM python:3.10-alpine
@@ -32,6 +36,9 @@ ENV TZ=Asia/Shanghai \
     PATH="/opt/venv/bin:$PATH" \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
+
+# 替换为阿里云镜像源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 只安装运行时必要的包
 RUN apk add --no-cache \
