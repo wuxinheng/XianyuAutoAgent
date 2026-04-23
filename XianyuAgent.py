@@ -282,7 +282,8 @@ class TechAgent(BaseAgent):
             }
         )
 
-        return self.safety_filter(response.choices[0].message.content)
+        content = response.choices[0].message.content
+        return self.safety_filter(self._strip_think_tags(content))
 
 
 
